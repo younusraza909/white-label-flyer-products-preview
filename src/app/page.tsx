@@ -133,14 +133,23 @@ function ImagePanel({
 }) {
   const [broken, setBroken] = useState(false);
   const [imgReady, setImgReady] = useState(false);
+  const imgRef = useRef<HTMLImageElement>(null);
+
+
   const hasSrc = Boolean(src && src.trim() !== "");
   const showImg = hasSrc && !broken;
   const showLoader = showImg && !imgReady;
 
-  useLayoutEffect(() => {
+  useEffect(() => {
     setBroken(false);
     setImgReady(false);
+    
+    // If image is already complete (cached), set ready immediately
+    if (imgRef.current?.complete) {
+      setImgReady(true);
+    }
   }, [src]);
+
 
   return (
     <div
@@ -161,6 +170,7 @@ function ImagePanel({
           <>
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
+              ref={imgRef}
               key={src}
               src={src}
               alt={alt}
@@ -174,6 +184,7 @@ function ImagePanel({
                 setImgReady(true);
               }}
             />
+
             {showLoader && (
               <div
                 className="absolute inset-0 z-10 flex h-full w-full items-center justify-center bg-[linear-gradient(135deg,#131d30_0%,#0d1220_100%)]"
@@ -260,7 +271,20 @@ export default function ReviewPage() {
         const data = await res.json();
         if (Array.isArray(data)) {
           setProducts(data);
-          setComment(data[0]?.comments || "");
+          
+          // Restore progress from localStorage
+          const saved = localStorage.getItem("flyer_review_index");
+          if (saved) {
+            const idx = parseInt(saved, 10);
+            if (idx >= 0 && idx < data.length) {
+              setIdx(idx);
+              setComment(data[idx]?.comments || "");
+            } else {
+              setComment(data[0]?.comments || "");
+            }
+          } else {
+            setComment(data[0]?.comments || "");
+          }
         }
       } catch (err) {
         console.error("Fetch failed", err);
@@ -269,6 +293,14 @@ export default function ReviewPage() {
       }
     })();
   }, []);
+
+  /* Persist progress to localStorage */
+  useEffect(() => {
+    if (products.length > 0) {
+      localStorage.setItem("flyer_review_index", currentIndex.toString());
+    }
+  }, [currentIndex, products.length]);
+
 
   const cur = products[currentIndex];
 
