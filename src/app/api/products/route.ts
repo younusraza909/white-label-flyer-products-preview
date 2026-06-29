@@ -20,15 +20,21 @@ export async function GET() {
     // 3. Merge reviews into products
     const reviewsMap = new Map(reviews.map((r) => [r.flyer_product_id, r]));
 
-    const mergedProducts = products.map((product) => {
-      const review = reviewsMap.get(product.flyer_product_id);
-      return {
-        ...product,
-        is_accepted: review ? review.is_accepted : null,
-        comments: review ? review.comments : '',
-        reviewed_at: review ? review.updated_at : null,
-      };
-    });
+    const mergedProducts = products
+      .map((product) => {
+        const review = reviewsMap.get(product.flyer_product_id);
+        return {
+          ...product,
+          is_accepted: review ? review.is_accepted : null,
+          comments: review ? review.comments : '',
+          reviewed_at: review ? review.updated_at : null,
+        };
+      })
+      .filter(
+        (product) =>
+          product.image_url?.trim() &&
+          product.product_white_label_image?.trim(),
+      );
 
     return NextResponse.json(mergedProducts);
   } catch (error: any) {
