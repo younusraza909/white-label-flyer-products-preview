@@ -45,12 +45,12 @@ function matchesStatusFilter(
   }
 }
 
-const FILTER_OPTIONS: { value: StatusFilter; label: string }[] = [
-  { value: "all", label: "All" },
-  { value: "accepted", label: "Approved" },
-  { value: "rejected", label: "Rejected" },
-  { value: "pending", label: "Pending" },
-];
+const FILTER_LABELS: Record<StatusFilter, string> = {
+  all: "All",
+  accepted: "Approved",
+  rejected: "Rejected",
+  pending: "Pending",
+};
 
 /* ─── Token ──────────────────────────────────────────────────────────── */
 const T =
@@ -92,25 +92,38 @@ const STAT_CFG = {
 
 function StatCard({
   label,
+  subtitle,
   value,
   color,
+  active,
+  onClick,
 }: {
   label: string;
+  subtitle: string;
   value: number;
   color: keyof typeof STAT_CFG;
+  active: boolean;
+  onClick: () => void;
 }) {
   const c = STAT_CFG[color];
   return (
-    <div
+    <button
+      type="button"
+      onClick={onClick}
+      aria-pressed={active}
       className={cn(
-        "relative overflow-hidden rounded-xl p-4",
+        "relative overflow-hidden rounded-xl p-4 text-left",
         T,
-        "group cursor-default",
+        "group cursor-pointer",
+        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[rgba(33,150,243,0.45)]",
+        active && "scale-[1.01]",
       )}
       style={{
-        background: c.bg,
-        border: `0.5px solid ${c.border}`,
-        boxShadow: `inset 0 1px 0 rgba(255,255,255,0.05)`,
+        background: active ? c.bg : "rgba(255,255,255,0.02)",
+        border: `0.5px solid ${active ? c.accent : c.border}`,
+        boxShadow: active
+          ? `inset 0 1px 0 rgba(255,255,255,0.08), 0 0 16px ${c.glow}`
+          : `inset 0 1px 0 rgba(255,255,255,0.05)`,
       }}
     >
       {/* left accent stripe */}
@@ -120,7 +133,10 @@ function StatCard({
       />
       {/* subtle inner glow on hover */}
       <div
-        className="absolute inset-0 opacity-0 group-hover:opacity-100 rounded-xl"
+        className={cn(
+          "absolute inset-0 rounded-xl",
+          active ? "opacity-100" : "opacity-0 group-hover:opacity-100",
+        )}
         style={{
           background: `radial-gradient(ellipse at 30% 50%, ${c.glow}, transparent 70%)`,
         }}
@@ -135,8 +151,14 @@ function StatCard({
         >
           {value.toLocaleString()}
         </p>
+        <p
+          className="mt-2 text-center text-[10px] font-bold uppercase tracking-[0.8px]"
+          style={{ color: active ? c.text : "rgba(255,255,255,0.35)" }}
+        >
+          {subtitle}
+        </p>
       </div>
-    </div>
+    </button>
   );
 }
 
@@ -554,70 +576,40 @@ export default function ReviewPage() {
             "0 1px 0 rgba(255,255,255,0.04), 0 4px 24px rgba(0,0,0,0.3)",
         }}
       >
-        {/* Stat cards — full width, always 4 columns */}
+        {/* Stat cards — clickable filters, full width, always 4 columns */}
         <div className="grid grid-cols-4 gap-2.5">
-          <StatCard label="Reviewed" value={stats.reviewed} color="blue" />
-          <StatCard label="Accepted" value={stats.accepted} color="green" />
-          <StatCard label="Rejected" value={stats.rejected} color="red" />
-          <StatCard label="Pending" value={stats.pending} color="yellow" />
-        </div>
-
-        <div
-          className="mt-2.5 flex items-center gap-2 rounded-xl p-1"
-          style={{
-            background: "rgba(255,255,255,0.03)",
-            border: "0.5px solid rgba(255,255,255,0.07)",
-          }}
-          role="tablist"
-          aria-label="Filter products by review status"
-        >
-          {FILTER_OPTIONS.map(({ value, label }) => {
-            const active = statusFilter === value;
-            const count =
-              value === "all"
-                ? products.length
-                : products.filter((p) => matchesStatusFilter(p, value)).length;
-            return (
-              <button
-                key={value}
-                type="button"
-                role="tab"
-                aria-selected={active}
-                onClick={() => changeFilter(value)}
-                className={cn(
-                  "flex flex-1 items-center justify-center gap-1.5 rounded-lg px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.6px]",
-                  T,
-                  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[rgba(33,150,243,0.45)]",
-                  active
-                    ? "text-white shadow-[0_0_12px_rgba(33,150,243,0.15)]"
-                    : "text-[rgba(255,255,255,0.45)] hover:text-[rgba(255,255,255,0.75)]",
-                )}
-                style={
-                  active
-                    ? {
-                        background: "rgba(33,150,243,0.18)",
-                        border: "0.5px solid rgba(33,150,243,0.35)",
-                      }
-                    : {
-                        background: "transparent",
-                        border: "0.5px solid transparent",
-                      }
-                }
-              >
-                <span>{label}</span>
-                <span
-                  className={cn(
-                    "tabular-nums text-[10px] font-bold",
-                    active
-                      ? "text-[#60b8ff]"
-                      : "text-[rgba(255,255,255,0.3)]",
-                  )}
-                >
-                  {count}
-                </span>
-              </button>
-            );
-          })}
+          <StatCard
+            label="Reviewed"
+            subtitle={`All ${products.length}`}
+            value={stats.reviewed}
+            color="blue"
+            active={statusFilter === "all"}
+            onClick={() => changeFilter("all")}
+          />
+          <StatCard
+            label="Accepted"
+            subtitle={`Approved ${stats.accepted}`}
+            value={stats.accepted}
+            color="green"
+            active={statusFilter === "accepted"}
+            onClick={() => changeFilter("accepted")}
+          />
+          <StatCard
+            label="Rejected"
+            subtitle={`Rejected ${stats.rejected}`}
+            value={stats.rejected}
+            color="red"
+            active={statusFilter === "rejected"}
+            onClick={() => changeFilter("rejected")}
+          />
+          <StatCard
+            label="Pending"
+            subtitle={`Pending ${stats.pending}`}
+            value={stats.pending}
+            color="yellow"
+            active={statusFilter === "pending"}
+            onClick={() => changeFilter("pending")}
+          />
         </div>
       </header>
 
@@ -629,7 +621,7 @@ export default function ReviewPage() {
               No{" "}
               {statusFilter === "all"
                 ? "products"
-                : `${FILTER_OPTIONS.find((o) => o.value === statusFilter)?.label.toLowerCase()} products`}{" "}
+                : `${FILTER_LABELS[statusFilter].toLowerCase()} products`}{" "}
               to show.
             </p>
           </div>
