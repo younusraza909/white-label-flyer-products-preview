@@ -3,7 +3,7 @@
 import {
   useState,
   useEffect,
-  useLayoutEffect,
+  useMemo,
   useCallback,
   useRef,
 } from "react";
@@ -26,6 +26,31 @@ interface Product {
   comments: string;
   reviewed_at: string | null;
 }
+
+type StatusFilter = "all" | "accepted" | "rejected" | "pending";
+
+function matchesStatusFilter(
+  product: Product,
+  filter: StatusFilter,
+): boolean {
+  switch (filter) {
+    case "accepted":
+      return product.is_accepted === true;
+    case "rejected":
+      return product.is_accepted === false;
+    case "pending":
+      return product.is_accepted === null;
+    default:
+      return true;
+  }
+}
+
+const FILTER_OPTIONS: { value: StatusFilter; label: string }[] = [
+  { value: "all", label: "All" },
+  { value: "accepted", label: "Approved" },
+  { value: "rejected", label: "Rejected" },
+  { value: "pending", label: "Pending" },
+];
 
 /* ─── Token ──────────────────────────────────────────────────────────── */
 const T =
@@ -257,11 +282,17 @@ function NavBtn({
 ════════════════════════════════════════════════════════════════════════ */
 export default function ReviewPage() {
   const [products, setProducts] = useState<Product[]>([]);
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [currentIndex, setIdx] = useState(0);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [comment, setComment] = useState("");
   const commentRef = useRef<HTMLTextAreaElement>(null);
+
+  const filteredProducts = useMemo(
+    () => products.filter((p) => matchesStatusFilter(p, statusFilter)),
+    [products, statusFilter],
+  );
 
   /* fetch */
   useEffect(() => {
@@ -296,13 +327,22 @@ export default function ReviewPage() {
 
   /* Persist progress to localStorage */
   useEffect(() => {
-    if (products.length > 0) {
+    if (filteredProducts.length > 0) {
       localStorage.setItem("flyer_review_index", currentIndex.toString());
     }
-  }, [currentIndex, products.length]);
+  }, [currentIndex, filteredProducts.length]);
 
+  const changeFilter = useCallback(
+    (filter: StatusFilter) => {
+      setStatusFilter(filter);
+      setIdx(0);
+      const next = products.filter((p) => matchesStatusFilter(p, filter));
+      setComment(next[0]?.comments || "");
+    },
+    [products],
+  );
 
-  const cur = products[currentIndex];
+  const cur = filteredProducts[currentIndex];
 
   /* stats */
   const stats = (() => {
@@ -339,21 +379,31 @@ export default function ReviewPage() {
           body: JSON.stringify(payload),
         });
         if (res.ok) {
-          setProducts((prev) => {
-            const next = [...prev];
-            next[currentIndex] = {
-              ...next[currentIndex],
-              is_accepted: isAccepted,
-              comments: comment,
-              reviewed_at: new Date().toISOString(),
-            };
-            return next;
-          });
-          if (currentIndex < products.length - 1) {
-            const nextIndex = currentIndex + 1;
-            setIdx(nextIndex);
-            setComment(products[nextIndex]?.comments || "");
+          const updatedProducts = products.map((p) =>
+            p.id === cur.id
+              ? {
+                  ...p,
+                  is_accepted: isAccepted,
+                  comments: comment,
+                  reviewed_at: new Date().toISOString(),
+                }
+              : p,
+          );
+          setProducts(updatedProducts);
+
+          const nextFiltered = updatedProducts.filter((p) =>
+            matchesStatusFilter(p, statusFilter),
+          );
+          const savedStillAtIndex =
+            nextFiltered[currentIndex]?.id === cur.id;
+          let nextIndex = currentIndex;
+          if (savedStillAtIndex && currentIndex < nextFiltered.length - 1) {
+            nextIndex = currentIndex + 1;
+          } else if (currentIndex >= nextFiltered.length) {
+            nextIndex = Math.max(0, nextFiltered.length - 1);
           }
+          setIdx(nextIndex);
+          setComment(nextFiltered[nextIndex]?.comments || "");
         }
       } catch (err) {
         console.error("Save failed", err);
@@ -361,7 +411,7 @@ export default function ReviewPage() {
         setSaving(false);
       }
     },
-    [cur, currentIndex, comment, saving, products],
+    [cur, currentIndex, comment, saving, products, statusFilter],
   );
 
   /* navigate */
@@ -370,13 +420,13 @@ export default function ReviewPage() {
       setIdx((prev) => {
         const next =
           dir === "next"
-            ? Math.min(prev + 1, products.length - 1)
+            ? Math.min(prev + 1, filteredProducts.length - 1)
             : Math.max(prev - 1, 0);
-        if (next !== prev) setComment(products[next]?.comments || "");
+        if (next !== prev) setComment(filteredProducts[next]?.comments || "");
         return next;
       });
     },
-    [products],
+    [filteredProducts],
   );
 
   /* keyboard */
@@ -439,9 +489,13 @@ export default function ReviewPage() {
       </div>
     );
 
+  const filterEmpty = filteredProducts.length === 0;
+
   /* derived */
-  const pct = Math.round(((currentIndex + 1) / products.length) * 100);
-  const daysAgo = cur.reviewed_at
+  const pct = filterEmpty
+    ? 0
+    : Math.round(((currentIndex + 1) / filteredProducts.length) * 100);
+  const daysAgo = cur?.reviewed_at
     ? Math.floor((Date.now() - new Date(cur.reviewed_at).getTime()) / 864e5)
     : null;
 
@@ -469,9 +523,9 @@ export default function ReviewPage() {
     },
   } as const;
   const sk =
-    cur.is_accepted === true
+    cur?.is_accepted === true
       ? "accepted"
-      : cur.is_accepted === false
+      : cur?.is_accepted === false
         ? "rejected"
         : "pending";
   const ss = STATUS[sk];
@@ -507,10 +561,80 @@ export default function ReviewPage() {
           <StatCard label="Rejected" value={stats.rejected} color="red" />
           <StatCard label="Pending" value={stats.pending} color="yellow" />
         </div>
+
+        <div
+          className="mt-2.5 flex items-center gap-2 rounded-xl p-1"
+          style={{
+            background: "rgba(255,255,255,0.03)",
+            border: "0.5px solid rgba(255,255,255,0.07)",
+          }}
+          role="tablist"
+          aria-label="Filter products by review status"
+        >
+          {FILTER_OPTIONS.map(({ value, label }) => {
+            const active = statusFilter === value;
+            const count =
+              value === "all"
+                ? products.length
+                : products.filter((p) => matchesStatusFilter(p, value)).length;
+            return (
+              <button
+                key={value}
+                type="button"
+                role="tab"
+                aria-selected={active}
+                onClick={() => changeFilter(value)}
+                className={cn(
+                  "flex flex-1 items-center justify-center gap-1.5 rounded-lg px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.6px]",
+                  T,
+                  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[rgba(33,150,243,0.45)]",
+                  active
+                    ? "text-white shadow-[0_0_12px_rgba(33,150,243,0.15)]"
+                    : "text-[rgba(255,255,255,0.45)] hover:text-[rgba(255,255,255,0.75)]",
+                )}
+                style={
+                  active
+                    ? {
+                        background: "rgba(33,150,243,0.18)",
+                        border: "0.5px solid rgba(33,150,243,0.35)",
+                      }
+                    : {
+                        background: "transparent",
+                        border: "0.5px solid transparent",
+                      }
+                }
+              >
+                <span>{label}</span>
+                <span
+                  className={cn(
+                    "tabular-nums text-[10px] font-bold",
+                    active
+                      ? "text-[#60b8ff]"
+                      : "text-[rgba(255,255,255,0.3)]",
+                  )}
+                >
+                  {count}
+                </span>
+              </button>
+            );
+          })}
+        </div>
       </header>
 
       {/* ── CONTENT ──────────────────────────────────────────────────── */}
       <div className="flex flex-1 min-h-0 flex-col px-6 pt-3 pb-3 gap-2.5">
+        {filterEmpty ? (
+          <div className="flex flex-1 items-center justify-center rounded-xl border-[0.5px] border-[rgba(255,255,255,0.07)] bg-[rgba(255,255,255,0.02)]">
+            <p className="text-sm text-[rgba(255,255,255,0.4)]">
+              No{" "}
+              {statusFilter === "all"
+                ? "products"
+                : `${FILTER_OPTIONS.find((o) => o.value === statusFilter)?.label.toLowerCase()} products`}{" "}
+              to show.
+            </p>
+          </div>
+        ) : (
+          <>
         {/* ── Meta bar: product IDs (left) + progress (right) ── */}
         <div
           className="shrink-0 flex items-center justify-between rounded-xl px-4 py-2.5"
@@ -544,7 +668,7 @@ export default function ReviewPage() {
             <span className="text-[11px] font-medium tabular-nums text-[rgba(255,255,255,0.45)]">
               {currentIndex + 1}{" "}
               <span className="text-[rgba(255,255,255,0.25)]">/</span>{" "}
-              {products.length}
+              {filteredProducts.length}
             </span>
             <div
               className="h-[5px] w-[160px] overflow-hidden rounded-full"
@@ -699,6 +823,8 @@ export default function ReviewPage() {
             <span>Reject (S)</span>
           </button>
         </div>
+          </>
+        )}
       </div>
     </main>
   );
