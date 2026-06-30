@@ -133,9 +133,6 @@ function StatCard({
         }}
       />
       <div className="relative w-full">
-        <p className="mb-1.5 text-[10px] font-bold uppercase tracking-[1px] text-[rgba(255,255,255,0.45)]">
-          {label}
-        </p>
         <p
           className="w-full text-center text-[28px] font-[600] leading-none tabular-nums"
           style={{ color: c.text }}
