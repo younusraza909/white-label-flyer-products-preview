@@ -1,12 +1,6 @@
 "use client";
 
-import {
-  useState,
-  useEffect,
-  useMemo,
-  useCallback,
-  useRef,
-} from "react";
+import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { Loader2 } from "lucide-react";
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
@@ -29,10 +23,7 @@ interface Product {
 
 type StatusFilter = "all" | "accepted" | "rejected" | "pending";
 
-function matchesStatusFilter(
-  product: Product,
-  filter: StatusFilter,
-): boolean {
+function matchesStatusFilter(product: Product, filter: StatusFilter): boolean {
   switch (filter) {
     case "accepted":
       return product.is_accepted === true;
@@ -182,7 +173,6 @@ function ImagePanel({
   const [imgReady, setImgReady] = useState(false);
   const imgRef = useRef<HTMLImageElement>(null);
 
-
   const hasSrc = Boolean(src && src.trim() !== "");
   const showImg = hasSrc && !broken;
   const showLoader = showImg && !imgReady;
@@ -190,13 +180,12 @@ function ImagePanel({
   useEffect(() => {
     setBroken(false);
     setImgReady(false);
-    
+
     // If image is already complete (cached), set ready immediately
     if (imgRef.current?.complete) {
       setImgReady(true);
     }
   }, [src]);
-
 
   return (
     <div
@@ -324,7 +313,7 @@ export default function ReviewPage() {
         const data = await res.json();
         if (Array.isArray(data)) {
           setProducts(data);
-          
+
           // Restore progress from localStorage
           const saved = localStorage.getItem("flyer_review_index");
           if (saved) {
@@ -416,8 +405,7 @@ export default function ReviewPage() {
           const nextFiltered = updatedProducts.filter((p) =>
             matchesStatusFilter(p, statusFilter),
           );
-          const savedStillAtIndex =
-            nextFiltered[currentIndex]?.id === cur.id;
+          const savedStillAtIndex = nextFiltered[currentIndex]?.id === cur.id;
           let nextIndex = currentIndex;
           if (savedStillAtIndex && currentIndex < nextFiltered.length - 1) {
             nextIndex = currentIndex + 1;
@@ -580,7 +568,7 @@ export default function ReviewPage() {
         <div className="grid grid-cols-4 gap-2.5">
           <StatCard
             label="Reviewed"
-            subtitle={`All ${products.length}`}
+            subtitle={`All`}
             value={stats.reviewed}
             color="blue"
             active={statusFilter === "all"}
@@ -588,7 +576,7 @@ export default function ReviewPage() {
           />
           <StatCard
             label="Accepted"
-            subtitle={`Approved ${stats.accepted}`}
+            subtitle={`Approved`}
             value={stats.accepted}
             color="green"
             active={statusFilter === "accepted"}
@@ -596,7 +584,7 @@ export default function ReviewPage() {
           />
           <StatCard
             label="Rejected"
-            subtitle={`Rejected ${stats.rejected}`}
+            subtitle={`Rejected`}
             value={stats.rejected}
             color="red"
             active={statusFilter === "rejected"}
@@ -604,7 +592,7 @@ export default function ReviewPage() {
           />
           <StatCard
             label="Pending"
-            subtitle={`Pending ${stats.pending}`}
+            subtitle={`Pending`}
             value={stats.pending}
             color="yellow"
             active={statusFilter === "pending"}
@@ -627,194 +615,194 @@ export default function ReviewPage() {
           </div>
         ) : (
           <>
-        {/* ── Meta bar: product IDs (left) + progress (right) ── */}
-        <div
-          className="shrink-0 flex items-center justify-between rounded-xl px-4 py-2.5"
-          style={{
-            background: "rgba(255,255,255,0.025)",
-            border: "0.5px solid rgba(255,255,255,0.07)",
-          }}
-        >
-          <div className="flex items-center gap-6">
-            <div>
-              <p className="text-[9px] font-semibold uppercase tracking-[1.2px] text-[rgba(255,255,255,0.4)] mb-0.5">
-                Product ID
-              </p>
-              <p className="font-mono text-[13px] font-semibold text-[#60b8ff]">
-                {cur.flyer_product_id}
-              </p>
-            </div>
-            <div className="h-6 w-px bg-[rgba(255,255,255,0.08)]" />
-            <div>
-              <p className="text-[9px] font-semibold uppercase tracking-[1.2px] text-[rgba(255,255,255,0.4)] mb-0.5">
-                Database ID
-              </p>
-              <p className="font-mono text-[13px] font-semibold text-[#60b8ff]">
-                #{cur.id}
-              </p>
-            </div>
-          </div>
-
-          {/* progress */}
-          <div className="flex items-center gap-3">
-            <span className="text-[11px] font-medium tabular-nums text-[rgba(255,255,255,0.45)]">
-              {currentIndex + 1}{" "}
-              <span className="text-[rgba(255,255,255,0.25)]">/</span>{" "}
-              {filteredProducts.length}
-            </span>
+            {/* ── Meta bar: product IDs (left) + progress (right) ── */}
             <div
-              className="h-[5px] w-[160px] overflow-hidden rounded-full"
-              style={{ background: "rgba(255,255,255,0.08)" }}
+              className="shrink-0 flex items-center justify-between rounded-xl px-4 py-2.5"
+              style={{
+                background: "rgba(255,255,255,0.025)",
+                border: "0.5px solid rgba(255,255,255,0.07)",
+              }}
             >
-              <div
-                className="h-full rounded-full transition-[width] duration-500 ease-out"
+              <div className="flex items-center gap-6">
+                <div>
+                  <p className="text-[9px] font-semibold uppercase tracking-[1.2px] text-[rgba(255,255,255,0.4)] mb-0.5">
+                    Product ID
+                  </p>
+                  <p className="font-mono text-[13px] font-semibold text-[#60b8ff]">
+                    {cur.flyer_product_id}
+                  </p>
+                </div>
+                <div className="h-6 w-px bg-[rgba(255,255,255,0.08)]" />
+                <div>
+                  <p className="text-[9px] font-semibold uppercase tracking-[1.2px] text-[rgba(255,255,255,0.4)] mb-0.5">
+                    Database ID
+                  </p>
+                  <p className="font-mono text-[13px] font-semibold text-[#60b8ff]">
+                    #{cur.id}
+                  </p>
+                </div>
+              </div>
+
+              {/* progress */}
+              <div className="flex items-center gap-3">
+                <span className="text-[11px] font-medium tabular-nums text-[rgba(255,255,255,0.45)]">
+                  {currentIndex + 1}{" "}
+                  <span className="text-[rgba(255,255,255,0.25)]">/</span>{" "}
+                  {filteredProducts.length}
+                </span>
+                <div
+                  className="h-[5px] w-[160px] overflow-hidden rounded-full"
+                  style={{ background: "rgba(255,255,255,0.08)" }}
+                >
+                  <div
+                    className="h-full rounded-full transition-[width] duration-500 ease-out"
+                    style={{
+                      width: `${pct}%`,
+                      background:
+                        "linear-gradient(90deg,#2196f3 0%,#00bfa5 60%,#4caf50 100%)",
+                      boxShadow: "0 0 6px rgba(33,150,243,0.5)",
+                    }}
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* ── Image panels — flex-1 absorbs all leftover height ── */}
+            <div className="flex min-h-0 min-w-0 w-full flex-1 gap-3">
+              <ImagePanel
+                label="Original Image"
+                emoji="🖼️"
+                subtitle="image_url · Product photo"
+                src={cur.image_url}
+                alt="Product photo"
+              />
+              <ImagePanel
+                label="White Label Image"
+                emoji="📄"
+                subtitle="product_white_label_image · Branded version"
+                src={cur.product_white_label_image}
+                alt="White label"
+              />
+            </div>
+
+            {/* ── Status badge ── */}
+            <div
+              className={cn(
+                "shrink-0 flex items-center gap-3 rounded-xl px-4 py-2.5",
+                T,
+              )}
+              style={{ background: ss.bg, border: `0.5px solid ${ss.border}` }}
+            >
+              <span className="relative flex h-2.5 w-2.5 shrink-0" aria-hidden>
+                <span
+                  className="absolute inline-flex h-full w-full animate-ping rounded-full opacity-60"
+                  style={{ background: ss.dot }}
+                />
+                <span
+                  className="relative inline-flex h-2.5 w-2.5 rounded-full"
+                  style={{ background: ss.dot }}
+                />
+              </span>
+              <span
+                className="flex-1 text-[13px] font-semibold"
+                style={{ color: ss.text }}
+              >
+                {ss.label}
+              </span>
+              {daysAgo !== null && (
+                <span className="text-[11px] text-[rgba(255,255,255,0.4)]">
+                  Reviewed {daysAgo} day{daysAgo === 1 ? "" : "s"} ago
+                </span>
+              )}
+            </div>
+
+            {/* ── Comment ── */}
+            <div className="shrink-0">
+              <label
+                htmlFor="review-comment"
+                className="mb-1.5 block text-[9px] font-bold uppercase tracking-[1.2px] text-[rgba(255,255,255,0.4)]"
+              >
+                Add comment
+              </label>
+              <textarea
+                id="review-comment"
+                ref={commentRef}
+                value={comment}
+                onChange={(e) => setComment(e.target.value)}
+                placeholder="Sample comment about the product review..."
+                rows={2}
+                className={cn(
+                  "w-full resize-none rounded-xl px-3.5 py-2.5 text-[13px] leading-snug",
+                  "placeholder:text-[rgba(255,255,255,0.38)]",
+                  T,
+                  "focus:outline-none focus:ring-2 focus:ring-[rgba(33,150,243,0.35)]",
+                )}
                 style={{
-                  width: `${pct}%`,
-                  background:
-                    "linear-gradient(90deg,#2196f3 0%,#00bfa5 60%,#4caf50 100%)",
-                  boxShadow: "0 0 6px rgba(33,150,243,0.5)",
+                  color: "#ffffff",
+                  caretColor: "#ffffff",
+                  background: "rgba(255,255,255,0.05)",
+                  border: "0.5px solid rgba(255,255,255,0.1)",
+                  boxShadow: "inset 0 1px 3px rgba(0,0,0,0.25)",
                 }}
               />
             </div>
-          </div>
-        </div>
 
-        {/* ── Image panels — flex-1 absorbs all leftover height ── */}
-        <div className="flex min-h-0 min-w-0 w-full flex-1 gap-3">
-          <ImagePanel
-            label="Original Image"
-            emoji="🖼️"
-            subtitle="image_url · Product photo"
-            src={cur.image_url}
-            alt="Product photo"
-          />
-          <ImagePanel
-            label="White Label Image"
-            emoji="📄"
-            subtitle="product_white_label_image · Branded version"
-            src={cur.product_white_label_image}
-            alt="White label"
-          />
-        </div>
+            {/* ── Accept / Reject ── */}
+            <div className="grid shrink-0 grid-cols-2 gap-3">
+              {/* Accept */}
+              <button
+                type="button"
+                onClick={() => saveReview(true)}
+                disabled={saving}
+                className={cn(
+                  "relative overflow-hidden flex items-center justify-center gap-2 rounded-xl py-[20px] text-[13px] font-semibold uppercase tracking-[0.8px]",
+                  T,
+                  "hover:shadow-[0_0_18px_rgba(76,175,80,0.25)] active:scale-[0.98]",
+                  "focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-[rgba(76,175,80,0.4)]",
+                  "disabled:opacity-50 disabled:cursor-not-allowed",
+                )}
+                style={{
+                  background:
+                    "linear-gradient(135deg, rgba(76,175,80,0.22) 0%, rgba(56,142,60,0.18) 100%)",
+                  border: "0.5px solid rgba(76,175,80,0.45)",
+                  color: "#81c784",
+                }}
+              >
+                {saving ? (
+                  <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
+                ) : (
+                  <span aria-hidden>✓</span>
+                )}
+                <span>Accept (A)</span>
+              </button>
 
-        {/* ── Status badge ── */}
-        <div
-          className={cn(
-            "shrink-0 flex items-center gap-3 rounded-xl px-4 py-2.5",
-            T,
-          )}
-          style={{ background: ss.bg, border: `0.5px solid ${ss.border}` }}
-        >
-          <span className="relative flex h-2.5 w-2.5 shrink-0" aria-hidden>
-            <span
-              className="absolute inline-flex h-full w-full animate-ping rounded-full opacity-60"
-              style={{ background: ss.dot }}
-            />
-            <span
-              className="relative inline-flex h-2.5 w-2.5 rounded-full"
-              style={{ background: ss.dot }}
-            />
-          </span>
-          <span
-            className="flex-1 text-[13px] font-semibold"
-            style={{ color: ss.text }}
-          >
-            {ss.label}
-          </span>
-          {daysAgo !== null && (
-            <span className="text-[11px] text-[rgba(255,255,255,0.4)]">
-              Reviewed {daysAgo} day{daysAgo === 1 ? "" : "s"} ago
-            </span>
-          )}
-        </div>
-
-        {/* ── Comment ── */}
-        <div className="shrink-0">
-          <label
-            htmlFor="review-comment"
-            className="mb-1.5 block text-[9px] font-bold uppercase tracking-[1.2px] text-[rgba(255,255,255,0.4)]"
-          >
-            Add comment
-          </label>
-          <textarea
-            id="review-comment"
-            ref={commentRef}
-            value={comment}
-            onChange={(e) => setComment(e.target.value)}
-            placeholder="Sample comment about the product review..."
-            rows={2}
-            className={cn(
-              "w-full resize-none rounded-xl px-3.5 py-2.5 text-[13px] leading-snug",
-              "placeholder:text-[rgba(255,255,255,0.38)]",
-              T,
-              "focus:outline-none focus:ring-2 focus:ring-[rgba(33,150,243,0.35)]",
-            )}
-            style={{
-              color: "#ffffff",
-              caretColor: "#ffffff",
-              background: "rgba(255,255,255,0.05)",
-              border: "0.5px solid rgba(255,255,255,0.1)",
-              boxShadow: "inset 0 1px 3px rgba(0,0,0,0.25)",
-            }}
-          />
-        </div>
-
-        {/* ── Accept / Reject ── */}
-        <div className="grid shrink-0 grid-cols-2 gap-3">
-          {/* Accept */}
-          <button
-            type="button"
-            onClick={() => saveReview(true)}
-            disabled={saving}
-            className={cn(
-              "relative overflow-hidden flex items-center justify-center gap-2 rounded-xl py-[20px] text-[13px] font-semibold uppercase tracking-[0.8px]",
-              T,
-              "hover:shadow-[0_0_18px_rgba(76,175,80,0.25)] active:scale-[0.98]",
-              "focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-[rgba(76,175,80,0.4)]",
-              "disabled:opacity-50 disabled:cursor-not-allowed",
-            )}
-            style={{
-              background:
-                "linear-gradient(135deg, rgba(76,175,80,0.22) 0%, rgba(56,142,60,0.18) 100%)",
-              border: "0.5px solid rgba(76,175,80,0.45)",
-              color: "#81c784",
-            }}
-          >
-            {saving ? (
-              <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
-            ) : (
-              <span aria-hidden>✓</span>
-            )}
-            <span>Accept (A)</span>
-          </button>
-
-          {/* Reject */}
-          <button
-            type="button"
-            onClick={() => saveReview(false)}
-            disabled={saving}
-            className={cn(
-              "relative overflow-hidden flex items-center justify-center gap-2 rounded-xl py-3 text-[13px] font-semibold uppercase tracking-[0.8px]",
-              T,
-              "hover:shadow-[0_0_18px_rgba(244,67,54,0.25)] active:scale-[0.98]",
-              "focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-[rgba(244,67,54,0.4)]",
-              "disabled:opacity-50 disabled:cursor-not-allowed",
-            )}
-            style={{
-              background:
-                "linear-gradient(135deg, rgba(244,67,54,0.22) 0%, rgba(183,28,28,0.18) 100%)",
-              border: "0.5px solid rgba(244,67,54,0.45)",
-              color: "#ef9a9a",
-            }}
-          >
-            {saving ? (
-              <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
-            ) : (
-              <span aria-hidden>✕</span>
-            )}
-            <span>Reject (S)</span>
-          </button>
-        </div>
+              {/* Reject */}
+              <button
+                type="button"
+                onClick={() => saveReview(false)}
+                disabled={saving}
+                className={cn(
+                  "relative overflow-hidden flex items-center justify-center gap-2 rounded-xl py-3 text-[13px] font-semibold uppercase tracking-[0.8px]",
+                  T,
+                  "hover:shadow-[0_0_18px_rgba(244,67,54,0.25)] active:scale-[0.98]",
+                  "focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-[rgba(244,67,54,0.4)]",
+                  "disabled:opacity-50 disabled:cursor-not-allowed",
+                )}
+                style={{
+                  background:
+                    "linear-gradient(135deg, rgba(244,67,54,0.22) 0%, rgba(183,28,28,0.18) 100%)",
+                  border: "0.5px solid rgba(244,67,54,0.45)",
+                  color: "#ef9a9a",
+                }}
+              >
+                {saving ? (
+                  <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
+                ) : (
+                  <span aria-hidden>✕</span>
+                )}
+                <span>Reject (S)</span>
+              </button>
+            </div>
           </>
         )}
       </div>
