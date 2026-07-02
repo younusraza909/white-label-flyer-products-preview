@@ -717,7 +717,7 @@ export default function ReviewPage() {
                   />
                 </form>
                 <div
-                  className="h-[5px] w-[160px] overflow-hidden rounded-full"
+                  className="ml-3 h-[5px] w-[160px] overflow-hidden rounded-full"
                   style={{ background: "rgba(255,255,255,0.08)" }}
                 >
                   <div
