@@ -295,7 +295,11 @@ export default function ReviewPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [comment, setComment] = useState("");
+  const [jumpInput, setJumpInput] = useState("");
   const commentRef = useRef<HTMLTextAreaElement>(null);
+  const jumpInputRef = useRef<HTMLInputElement>(null);
+
+  const storageKey = (filter: StatusFilter) => `flyer_review_index_${filter}`;
 
   const filteredProducts = useMemo(
     () => products.filter((p) => matchesStatusFilter(p, statusFilter)),
@@ -311,8 +315,8 @@ export default function ReviewPage() {
         if (Array.isArray(data)) {
           setProducts(data);
 
-          // Restore progress from localStorage
-          const saved = localStorage.getItem("flyer_review_index");
+          // Restore progress from localStorage (per filter)
+          const saved = localStorage.getItem(storageKey("all"));
           if (saved) {
             const idx = parseInt(saved, 10);
             if (idx >= 0 && idx < data.length) {
@@ -333,19 +337,26 @@ export default function ReviewPage() {
     })();
   }, []);
 
-  /* Persist progress to localStorage */
+  /* Persist progress to localStorage (per filter) */
   useEffect(() => {
     if (filteredProducts.length > 0) {
-      localStorage.setItem("flyer_review_index", currentIndex.toString());
+      localStorage.setItem(storageKey(statusFilter), currentIndex.toString());
     }
-  }, [currentIndex, filteredProducts.length]);
+  }, [currentIndex, filteredProducts.length, statusFilter]);
 
   const changeFilter = useCallback(
     (filter: StatusFilter) => {
       setStatusFilter(filter);
-      setIdx(0);
       const next = products.filter((p) => matchesStatusFilter(p, filter));
-      setComment(next[0]?.comments || "");
+      const saved = localStorage.getItem(storageKey(filter));
+      let idx = 0;
+      if (saved) {
+        const parsed = parseInt(saved, 10);
+        if (parsed >= 0 && parsed < next.length) idx = parsed;
+      }
+      setIdx(idx);
+      setComment(next[idx]?.comments || "");
+      setJumpInput("");
     },
     [products],
   );
@@ -436,11 +447,32 @@ export default function ReviewPage() {
     [filteredProducts],
   );
 
+  const jumpToPosition = useCallback(
+    (raw: string) => {
+      const num = parseInt(raw.trim(), 10);
+      if (Number.isNaN(num) || filteredProducts.length === 0) return;
+      const targetIndex = Math.min(
+        Math.max(num - 1, 0),
+        filteredProducts.length - 1,
+      );
+      setIdx(targetIndex);
+      setComment(filteredProducts[targetIndex]?.comments || "");
+      setJumpInput("");
+    },
+    [filteredProducts],
+  );
+
   /* keyboard */
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (document.activeElement === commentRef.current) {
-        if (e.key === "Escape") commentRef.current?.blur();
+      if (
+        document.activeElement === commentRef.current ||
+        document.activeElement === jumpInputRef.current
+      ) {
+        if (e.key === "Escape") {
+          commentRef.current?.blur();
+          jumpInputRef.current?.blur();
+        }
         return;
       }
       switch (e.key) {
@@ -640,13 +672,50 @@ export default function ReviewPage() {
                 </div>
               </div>
 
-              {/* progress */}
+              {/* progress + jump */}
               <div className="flex items-center gap-3">
                 <span className="text-[11px] font-medium tabular-nums text-[rgba(255,255,255,0.45)]">
                   {currentIndex + 1}{" "}
                   <span className="text-[rgba(255,255,255,0.25)]">/</span>{" "}
                   {filteredProducts.length}
                 </span>
+                <form
+                  className="flex items-center gap-1.5"
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    jumpToPosition(jumpInput);
+                  }}
+                >
+                  <label
+                    htmlFor="jump-to-position"
+                    className="text-[9px] font-semibold uppercase tracking-[0.8px] text-[rgba(255,255,255,0.35)]"
+                  >
+                    Go to
+                  </label>
+                  <input
+                    id="jump-to-position"
+                    ref={jumpInputRef}
+                    type="number"
+                    min={1}
+                    max={filteredProducts.length}
+                    value={jumpInput}
+                    onChange={(e) => setJumpInput(e.target.value)}
+                    placeholder={String(currentIndex + 1)}
+                    title={`Jump to product 1–${filteredProducts.length}`}
+                    className={cn(
+                      "w-[72px] rounded-lg px-2 py-1 text-center text-[11px] font-medium tabular-nums",
+                      "placeholder:text-[rgba(255,255,255,0.3)]",
+                      T,
+                      "focus:outline-none focus:ring-2 focus:ring-[rgba(33,150,243,0.35)]",
+                      "[appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none",
+                    )}
+                    style={{
+                      color: "#ffffff",
+                      background: "rgba(255,255,255,0.05)",
+                      border: "0.5px solid rgba(255,255,255,0.12)",
+                    }}
+                  />
+                </form>
                 <div
                   className="h-[5px] w-[160px] overflow-hidden rounded-full"
                   style={{ background: "rgba(255,255,255,0.08)" }}
