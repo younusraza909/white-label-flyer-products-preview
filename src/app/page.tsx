@@ -447,14 +447,19 @@ export default function ReviewPage() {
     [filteredProducts],
   );
 
-  const jumpToPosition = useCallback(
+  const jumpToProductId = useCallback(
     (raw: string) => {
-      const num = parseInt(raw.trim(), 10);
-      if (Number.isNaN(num) || filteredProducts.length === 0) return;
-      const targetIndex = Math.min(
-        Math.max(num - 1, 0),
-        filteredProducts.length - 1,
+      const trimmed = raw.trim();
+      if (!trimmed || filteredProducts.length === 0) return;
+
+      const targetIndex = filteredProducts.findIndex(
+        (p) =>
+          String(p.id) === trimmed ||
+          p.flyer_product_id === trimmed ||
+          (trimmed.startsWith("#") && String(p.id) === trimmed.slice(1)),
       );
+      if (targetIndex === -1) return;
+
       setIdx(targetIndex);
       setComment(filteredProducts[targetIndex]?.comments || "");
       setJumpInput("");
@@ -683,31 +688,29 @@ export default function ReviewPage() {
                   className="flex items-center gap-1.5"
                   onSubmit={(e) => {
                     e.preventDefault();
-                    jumpToPosition(jumpInput);
+                    jumpToProductId(jumpInput);
                   }}
                 >
                   <label
-                    htmlFor="jump-to-position"
+                    htmlFor="jump-to-product-id"
                     className="text-[9px] font-semibold uppercase tracking-[0.8px] text-[rgba(255,255,255,0.35)]"
                   >
-                    Go to
+                    Go to ID
                   </label>
                   <input
-                    id="jump-to-position"
+                    id="jump-to-product-id"
                     ref={jumpInputRef}
-                    type="number"
-                    min={1}
-                    max={filteredProducts.length}
+                    type="text"
+                    inputMode="numeric"
                     value={jumpInput}
                     onChange={(e) => setJumpInput(e.target.value)}
-                    placeholder={String(currentIndex + 1)}
-                    title={`Jump to product 1–${filteredProducts.length}`}
+                    placeholder={String(cur.id)}
+                    title="Jump to product by database ID or product ID"
                     className={cn(
-                      "w-[72px] rounded-lg px-2 py-1 text-center text-[11px] font-medium tabular-nums",
+                      "w-[88px] rounded-lg px-2 py-1 text-center text-[11px] font-medium tabular-nums",
                       "placeholder:text-[rgba(255,255,255,0.3)]",
                       T,
                       "focus:outline-none focus:ring-2 focus:ring-[rgba(33,150,243,0.35)]",
-                      "[appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none",
                     )}
                     style={{
                       color: "#ffffff",
