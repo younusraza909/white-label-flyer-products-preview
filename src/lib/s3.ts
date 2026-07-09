@@ -1,12 +1,28 @@
 import { PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
 
-const s3 = new S3Client({
-  region: process.env.AWS_REGION,
-  credentials: {
-    accessKeyId: process.env.AWS_ACCESS_KEY || "",
-    secretAccessKey: process.env.AWS_SECRET_KEY || "",
-  },
-});
+function getAwsCredentials() {
+  const accessKeyId =
+    process.env.AWS_ACCESS_KEY_ID ?? process.env.AWS_ACCESS_KEY_ID ?? "";
+  const secretAccessKey =
+    process.env.AWS_SECRET_ACCESS_KEY ??
+    process.env.AWS_SECRET_ACCESS_KEY ??
+    "";
+  return { accessKeyId, secretAccessKey };
+}
+
+function getS3Client() {
+  const { accessKeyId, secretAccessKey } = getAwsCredentials();
+  if (!accessKeyId || !secretAccessKey) {
+    throw new Error(
+      "AWS credentials are missing. Set AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY in .env, then restart the dev server.",
+    );
+  }
+
+  return new S3Client({
+    region: process.env.AWS_REGION,
+    credentials: { accessKeyId, secretAccessKey },
+  });
+}
 
 export function s3KeyFromUrl(url: string): string | null {
   try {
@@ -24,7 +40,7 @@ export async function uploadToS3(
   body: Buffer,
   contentType: string,
 ) {
-  await s3.send(
+  await getS3Client().send(
     new PutObjectCommand({
       Bucket: process.env.AWS_BUCKET_NAME,
       Key: key,
