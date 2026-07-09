@@ -159,20 +159,27 @@ function ImagePanel({
   subtitle,
   src,
   alt,
+  uploadable,
+  uploading,
+  onFileDrop,
 }: {
   label: string;
   emoji: string;
   subtitle: string;
   src?: string;
   alt: string;
+  uploadable?: boolean;
+  uploading?: boolean;
+  onFileDrop?: (file: File) => void;
 }) {
   const [broken, setBroken] = useState(false);
   const [imgReady, setImgReady] = useState(false);
+  const [dragOver, setDragOver] = useState(false);
   const imgRef = useRef<HTMLImageElement>(null);
 
   const hasSrc = Boolean(src && src.trim() !== "");
   const showImg = hasSrc && !broken;
-  const showLoader = showImg && !imgReady;
+  const showLoader = (showImg && !imgReady) || uploading;
 
   useEffect(() => {
     setBroken(false);
@@ -184,6 +191,14 @@ function ImagePanel({
     }
   }, [src]);
 
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setDragOver(false);
+    if (!uploadable || uploading || !onFileDrop) return;
+    const file = e.dataTransfer.files[0];
+    if (file?.type.startsWith("image/")) onFileDrop(file);
+  };
+
   return (
     <div
       className={cn(
@@ -192,9 +207,21 @@ function ImagePanel({
         "border-[0.5px] border-[rgba(255,255,255,0.09)]",
         T,
         "hover:border-[rgba(255,255,255,0.16)]",
+        uploadable && "cursor-copy",
+        dragOver && "border-[rgba(33,150,243,0.5)] ring-2 ring-[rgba(33,150,243,0.25)]",
       )}
       style={{ background: "rgba(13,18,40,0.85)" }}
       aria-busy={showLoader}
+      onDragOver={
+        uploadable
+          ? (e) => {
+              e.preventDefault();
+              setDragOver(true);
+            }
+          : undefined
+      }
+      onDragLeave={uploadable ? () => setDragOver(false) : undefined}
+      onDrop={uploadable ? handleDrop : undefined}
     >
       {/* image area — fills panel; in-flow sizing so absolute layers get a real width/height */}
       <div className="relative min-h-0 w-full min-w-0 flex-1">
@@ -230,7 +257,7 @@ function ImagePanel({
                     aria-hidden
                   />
                   <span className="block max-w-[90%] text-[11px] text-[rgba(255,255,255,0.4)]">
-                    Loading image…
+                    {uploading ? "Uploading image…" : "Loading image…"}
                   </span>
                 </div>
               </div>
@@ -294,6 +321,7 @@ export default function ReviewPage() {
   const [currentIndex, setIdx] = useState(0);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [uploadingImage, setUploadingImage] = useState(false);
   const [comment, setComment] = useState("");
   const [jumpInput, setJumpInput] = useState("");
   const commentRef = useRef<HTMLTextAreaElement>(null);
@@ -381,6 +409,32 @@ export default function ReviewPage() {
   })();
 
   /* save */
+  const uploadWhiteLabelImage = useCallback(
+    async (file: File) => {
+      if (!cur || uploadingImage) return;
+      setUploadingImage(true);
+      try {
+        const form = new FormData();
+        form.append("file", file);
+        form.append("id", String(cur.id));
+        form.append("currentUrl", cur.product_white_label_image);
+        const res = await fetch("/api/upload", { method: "POST", body: form });
+        if (!res.ok) throw new Error("Upload failed");
+        const { url } = await res.json();
+        setProducts((prev) =>
+          prev.map((p) =>
+            p.id === cur.id ? { ...p, product_white_label_image: url } : p,
+          ),
+        );
+      } catch (err) {
+        console.error("Image upload failed", err);
+      } finally {
+        setUploadingImage(false);
+      }
+    },
+    [cur, uploadingImage],
+  );
+
   const saveReview = useCallback(
     async (isAccepted: boolean) => {
       if (!cur || saving) return;
@@ -751,6 +805,9 @@ export default function ReviewPage() {
                 subtitle="product_white_label_image · Branded version"
                 src={cur.product_white_label_image}
                 alt="White label"
+                uploadable
+                uploading={uploadingImage}
+                onFileDrop={uploadWhiteLabelImage}
               />
             </div>
 
