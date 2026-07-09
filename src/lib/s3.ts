@@ -46,6 +46,7 @@ export async function uploadToS3(
       Key: key,
       Body: body,
       ContentType: contentType,
+      CacheControl: "no-cache, no-store, must-revalidate",
       ACL: "public-read",
     }),
   );

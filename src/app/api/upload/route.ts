@@ -25,13 +25,13 @@ export async function POST(request: Request) {
     const buffer = Buffer.from(await file.arrayBuffer());
     await uploadToS3(key, buffer, file.type);
 
-    const url = s3UrlFromKey(key);
+    const url = `${s3UrlFromKey(key)}?v=${Date.now()}`;
     await query(
       "UPDATE flyer_products SET product_white_label_image = $1 WHERE id = $2",
       [url, id],
     );
 
-    return NextResponse.json({ url: `${url}?v=${Date.now()}` });
+    return NextResponse.json({ url });
   } catch (error: unknown) {
     console.error("Upload failed:", error);
     const message = error instanceof Error ? error.message : "Upload failed";
